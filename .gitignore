@@ -8,3 +8,9 @@ dist/
 
 # Jetbrains
 .idea/
+
+cmd/data
+cmd/plugins
+cmd/client
+cmd/*.log
+*.log
