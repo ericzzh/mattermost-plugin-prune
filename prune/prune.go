@@ -198,8 +198,8 @@ func (pr *Prune) pruneActions(ch []string, ex []string, period time.Duration) (*
 
 	mlog.Info(fmt.Sprintf("Prune: %v root posts were selected from Posts.", len(roots)))
 
-	tmp, _ := json.MarshalIndent(roots, "", "\t")
-	fmt.Printf("*** Debug root sql result %v", string(tmp))
+	// tmp, _ := json.MarshalIndent(roots, "", "\t")
+	// fmt.Printf("*** Debug root sql result %v", string(tmp))
 
 	//A tree to express the structure of a post family
 	type rootTree struct {
@@ -250,7 +250,7 @@ func (pr *Prune) pruneActions(ch []string, ex []string, period time.Duration) (*
 
 			rootDict.deleted[root.Id] = rt
 			// if the true root is marked as deleted, it should be a prune root
-                        // no matter permanent or not
+			// no matter permanent or not
 			rootDict.prune[root.Id] = rt
 
 		} else if root.IsPinned {
@@ -377,6 +377,11 @@ func (pr *Prune) pruneActions(ch []string, ex []string, period time.Duration) (*
 
 		if root.post.HasReactions {
 			reactionMap[root.post.Id] = true
+		} else {
+			//Delete a reaction doesn't delete a reaction, but clear HasReactions flag
+			//so we don't whethere the reaction exists in Reactions table, we have to add all to consider.
+                        //same as Thread
+			reactionMap[root.post.Id] = false
 		}
 
 		for _, sub := range root.subroots {
@@ -404,12 +409,22 @@ func (pr *Prune) pruneActions(ch []string, ex []string, period time.Duration) (*
 
 			if thread.HasReactions {
 				reactionMap[thread.Id] = true
+
+			} else {
+				reactionMap[thread.Id] = false
 			}
 		}
 
 	}
 
-	mlog.Info(fmt.Sprintf("Prune: %d Reaction post Ids", len(reactionMap)))
+        var rcnt int
+        for _, hasRt := range reactionMap {
+           if hasRt {
+               rcnt++
+           }
+        }
+
+        mlog.Info(fmt.Sprintf("Prune: %d active reaction post Ids", rcnt))
 
 	// Save all file information
 	// to delay to last to delete. because if fail to delete posts, there is a chance to roll back.
@@ -452,7 +467,7 @@ func (pr *Prune) pruneActions(ch []string, ex []string, period time.Duration) (*
 	for id := range reactionMap {
 		reactionIds = append(reactionIds, id)
 	}
-	query, args, err := builder.Delete("Reactions").Where(sq.Eq{"Id": reactionIds}).ToSql()
+	query, args, err := builder.Delete("Reactions").Where(sq.Eq{"PostId": reactionIds}).ToSql()
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build delete from Reaction query string.")
