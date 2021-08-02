@@ -66,7 +66,7 @@ func mergeToChannels(srv *app.Server) (mergedChMap SimpleSpecificPolicy, err err
 	mergedChMap = SimpleSpecificPolicy{}
 	// channels specific rules
 	for k, p := range policy.channel {
-		mlog.Debug(fmt.Sprintf("Prune: merging channel %s, period %d", k, p))
+		mlog.Debug(fmt.Sprintf("Prune: merging channel %s, period %d", k, p.period))
 		mergedChMap[k] = p
 	}
 
@@ -82,7 +82,7 @@ func mergeToChannels(srv *app.Server) (mergedChMap SimpleSpecificPolicy, err err
 		}
 
 		for _, ch := range *chs {
-			mlog.Debug(fmt.Sprintf("Prune: merging user %s channel %s, period %d", u, ch.Id, p))
+			mlog.Debug(fmt.Sprintf("Prune: merging user %s channel %s, period %d", u, ch.Id, p.period))
 			mergedChMap[ch.Id] = p
 
 		}
@@ -101,7 +101,7 @@ func mergeToChannels(srv *app.Server) (mergedChMap SimpleSpecificPolicy, err err
 		for _, ch := range *chs {
 			// not overwrite the specific channel
 			if _, ok := mergedChMap[ch.Id]; !ok {
-				mlog.Debug(fmt.Sprintf("Prune: merging team %s channel %s, period %d", k, ch.Id, p))
+				mlog.Debug(fmt.Sprintf("Prune: merging team %s channel %s, period %d", k, ch.Id, p.period))
 				mergedChMap[ch.Id] = p
 			}
 
@@ -121,7 +121,7 @@ func (pr *Prune) Prune() error {
 
 	for chid, p := range pr.merged {
 
-		if _, err := pr.pruneActions([]string{chid}, nil, p); err != nil {
+		if _, err := pr.pruneActions([]string{chid}, nil, p.period); err != nil {
 			return errors.Wrapf(err, "failed to call pruneActions().")
 		}
 		mlog.Debug(fmt.Sprintf("Prune: specific case, channel: %s, completed.", chid))

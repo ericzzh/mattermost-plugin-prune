@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/mattermost/mattermost-server/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/pkg/errors"
 )
 
 // Plugin implements the interface expected by the Mattermost server to communicate between the server and plugin processes.
@@ -26,3 +28,15 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 }
 
 // See https://developers.mattermost.com/extend/plugins/server/reference/
+func (p *Plugin) OnActivate() error {
+	if err := p.API.RegisterCommand(&model.Command{
+		Trigger:          "prune",
+		AutoComplete:     true,
+		AutoCompleteHint: "period",
+		AutoCompleteDesc: "prune current channel's posts",
+	}); err != nil {
+		return errors.Wrapf(err, "failed to register %s command", "prune")
+	}
+
+        return nil
+}

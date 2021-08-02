@@ -50,6 +50,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost-server/v5/app"
+	"io/ioutil"
 	// "github.com/mattermost/mattermost-server/v5/einterfaces"
 	// "github.com/mattermost/mattermost-server/v5/model"
 )
@@ -69,7 +70,12 @@ type SimplePolicy struct {
 	user  SimpleSpecificPolicy
 }
 
-type SimpleSpecificPolicy map[string]time.Duration 
+type SpecificDesc struct {
+        name string
+	period time.Duration
+}
+
+type SimpleSpecificPolicy map[string]SpecificDesc 
 
 var policy SimplePolicy
 
@@ -80,17 +86,7 @@ func SetPolicy(p SimplePolicy) {
 func GetPolicy() SimplePolicy {
 	return policy
 }
-// 
-// func init() {
-// 	app.RegisterDataRetentionInterface(NewSimpleRetention)
-// }
-// 
-// func NewSimpleRetention(s *app.Server) einterfaces.DataRetentionInterface {
-// 	return &SimpleRetention{
-// 		srv: s,
-// 	}
-// }
-// 
-// func (zs *SimpleRetention) GetPolicy() (*model.DataRetentionPolicy, *model.AppError) {
-// 	return nil, nil
-// }
+
+func ReadPolicy() SimplePolicy(){
+    iouti
+}
