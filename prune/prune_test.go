@@ -1,4 +1,4 @@
-package retention
+package prune
 
 import (
 	"fmt"
@@ -228,7 +228,7 @@ func TestPrune(t *testing.T) {
 		require.NoError(t, err)
 
 		endTime := model.GetMillisForTime(time.Now().Add(-time.Second * period))
-		stats, err := pr.pruneActions([]string{A_3.Id}, nil, period)
+		stats, err := pr.PruneAction([]string{A_3.Id}, nil, period)
 		require.NoError(t, err, "there should be no errors after first pruning.")
 
 		posts, _ := th.App.GetPosts(A_3.Id, 0, 100)
@@ -262,7 +262,7 @@ func TestPrune(t *testing.T) {
 		}
 
 		time.Sleep(3 * time.Second)
-		stat2, err := pr.pruneActions([]string{A_3.Id}, nil, 1)
+		stat2, err := pr.PruneAction([]string{A_3.Id}, nil, 1)
 		require.NoError(t, err, "there should be no errors after second pruning.")
 
 		posts, err = th.App.GetPosts(A_3.Id, 0, 100)
@@ -351,7 +351,7 @@ func TestPrune(t *testing.T) {
 		pr, err := New(th.App)
 		require.NoError(t, err)
 
-		stats, err := pr.pruneActions([]string{A_3.Id}, nil, period)
+		stats, err := pr.PruneAction([]string{A_3.Id}, nil, period)
 		require.NoError(t, err, "there should be no errors after first pruning.")
 
 		posts, _ := th.App.GetPosts(A_3.Id, 0, 100)
@@ -370,7 +370,7 @@ func TestPrune(t *testing.T) {
 		}
 
 		time.Sleep(3 * time.Second)
-		stat2, err := pr.pruneActions([]string{A_3.Id}, nil, 1)
+		stat2, err := pr.PruneAction([]string{A_3.Id}, nil, 1)
 		require.NoError(t, err, "there should be no errors after second pruning.")
 
 		posts, err = th.App.GetPosts(A_3.Id, 0, 100)
@@ -438,7 +438,7 @@ func TestPrune(t *testing.T) {
 		pr, err1 := New(th.App)
 		require.NoError(t, err1)
 
-		stats, err1 := pr.pruneActions([]string{A_3.Id}, nil, 1)
+		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
 		require.NoError(t, err1, "there should be no errors after first pruning.")
 
 		posts, _ := th.App.GetPosts(A_3.Id, 0, 100)
@@ -503,7 +503,7 @@ func TestPrune(t *testing.T) {
 		pr, err1 := New(th.App)
 		require.NoError(t, err1)
 
-		stats, err1 := pr.pruneActions([]string{A_3.Id}, nil, 1)
+		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
 		require.NoError(t, err1, "there should be no errors after first pruning.")
 
 		posts, _ := th.App.GetPosts(A_3.Id, 0, 100)
@@ -566,7 +566,7 @@ func TestPrune(t *testing.T) {
 		pr, err := New(th.App)
 		require.NoError(t, err)
 
-		stats, err := pr.pruneActions([]string{A_3.Id}, nil, 1)
+		stats, err := pr.PruneAction([]string{A_3.Id}, nil, 1)
 		require.NoError(t, err, "there should be no errors after first pruning.")
 
 		posts, _ := th.App.GetPosts(A_3.Id, 0, 100)
@@ -630,7 +630,7 @@ func TestPrune(t *testing.T) {
 		pr, err := New(th.App)
 		require.NoError(t, err)
 
-		stats, err := pr.pruneActions([]string{A_3.Id}, nil, 1)
+		stats, err := pr.PruneAction([]string{A_3.Id}, nil, 1)
 		require.NoError(t, err, "there should be no errors after first pruning.")
 
 		posts, _ := th.App.GetPosts(A_3.Id, 0, 100)
@@ -679,7 +679,7 @@ func TestPrune(t *testing.T) {
 		pr, err1 := New(th.App)
 		require.NoError(t, err1)
 
-		stats, err1 := pr.pruneActions([]string{A_3.Id}, nil, 0)
+		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 0)
 		require.NoError(t, err1, "there should be no errors after first pruning.")
 
 		posts, _ := th.App.GetPosts(A_3.Id, 0, 100)
@@ -730,7 +730,7 @@ func TestPrune(t *testing.T) {
 		pr, err1 := New(th.App)
 		require.NoError(t, err1)
 
-		stats, err1 := pr.pruneActions([]string{A_3.Id}, nil, 1)
+		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
 		require.NoError(t, err1, "there should be no errors after first pruning.")
 
 		// +1 system message
@@ -776,7 +776,7 @@ func TestPrune(t *testing.T) {
 		pr, err1 := New(th.App)
 		require.NoError(t, err1)
 
-		stats, err1 := pr.pruneActions([]string{A_3.Id}, nil, 0)
+		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 0)
 		require.NoError(t, err1, "there should be no errors after first pruning.")
 
 		// +1 system message
@@ -822,7 +822,7 @@ func TestPrune(t *testing.T) {
 		pr, err1 := New(th.App)
 		require.NoError(t, err1)
 
-		stats, err1 := pr.pruneActions([]string{A_3.Id}, nil, 1)
+		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
 		require.NoError(t, err1, "there should be no errors after first pruning.")
 
 		// +1 system message
@@ -865,7 +865,7 @@ func TestPrune(t *testing.T) {
 		pr, err1 := New(th.App)
 		require.NoError(t, err1)
 
-		stats, err1 := pr.pruneActions([]string{A_3.Id}, nil, 1)
+		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
 		require.NoError(t, err1, "there should be no errors after first pruning.")
 
 		// +1 system message
@@ -913,7 +913,7 @@ func TestPrune(t *testing.T) {
 		pr, err1 := New(th.App)
 		require.NoError(t, err1)
 
-		stats, err1 := pr.pruneActions([]string{A_3.Id}, nil, 1)
+		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
 		require.NoError(t, err1, "there should be no errors after first pruning.")
 
 		// +1 system message
@@ -993,7 +993,7 @@ func TestPrune(t *testing.T) {
 		pr, err1 := New(th.App)
 		require.NoError(t, err1)
 
-		stats, err1 := pr.pruneActions([]string{A_3.Id}, nil, 1)
+		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
 		require.NoError(t, err1, "there should be no errors after first pruning.")
 
 		// +1 system message
@@ -1090,7 +1090,7 @@ func TestPrune(t *testing.T) {
 		pr, err1 := New(th.App)
 		require.NoError(t, err1)
 
-		stats, err1 := pr.pruneActions([]string{A_3.Id}, nil, 1)
+		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
 		require.NoError(t, err1, "there should be no errors after first pruning.")
 
 		// +1 system message
@@ -1153,7 +1153,7 @@ func TestPrune(t *testing.T) {
 		pr, err1 := New(th.App)
 		require.NoError(t, err1)
 
-		stats, err1 := pr.pruneActions(nil, []string{A_1.Id, uv.Id}, 1)
+		stats, err1 := pr.PruneAction(nil, []string{A_1.Id, uv.Id}, 1)
 		require.NoError(t, err1, "there should be no errors after first pruning.")
 
                 // system message:

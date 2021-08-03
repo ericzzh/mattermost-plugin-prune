@@ -44,15 +44,12 @@
 //                    s.js.StartWorkers()
 //                         workers.start() + watch.start()
 //                    s.js.StartSchedulers()
-package retention
+package prune
 
 import (
 	"time"
 
 	"github.com/mattermost/mattermost-server/v5/app"
-	"io/ioutil"
-	// "github.com/mattermost/mattermost-server/v5/einterfaces"
-	// "github.com/mattermost/mattermost-server/v5/model"
 )
 
 type SimpleRetention struct {
@@ -70,12 +67,7 @@ type SimplePolicy struct {
 	user  SimpleSpecificPolicy
 }
 
-type SpecificDesc struct {
-        name string
-	period time.Duration
-}
-
-type SimpleSpecificPolicy map[string]SpecificDesc 
+type SimpleSpecificPolicy map[string]time.Duration 
 
 var policy SimplePolicy
 
@@ -87,6 +79,3 @@ func GetPolicy() SimplePolicy {
 	return policy
 }
 
-func ReadPolicy() SimplePolicy(){
-    iouti
-}

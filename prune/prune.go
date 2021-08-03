@@ -1,16 +1,16 @@
-package retention
+package prune
 
 import (
 	"encoding/json"
 	"fmt"
-	"os"
+	// "os"
 	"path/filepath"
 
 	"database/sql"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/mattermost/gorp"
-	"github.com/mattermost/mattermost-server/cmd/mattermost/commands"
+	// "github.com/mattermost/mattermost-server/cmd/mattermost/commands"
 	"github.com/mattermost/mattermost-server/v5/app"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/shared/mlog"
@@ -63,49 +63,49 @@ func New(a *app.App) (*Prune, error) {
 
 }
 
-func Run() (e error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return errors.Wrapf(err, "Prune: Can't get current work directory")
-	}
-
-        // MM_WD, _  := filepath.Abs("~/go/src/mattermost-server")
-        MM_WD := os.Getenv("PRUNE_MM_SERVER_PATH")
-        // MM_WD := "/Users/zzh/go/src/mattermost-server"
-	err = os.Chdir(MM_WD)
-	if err != nil {
-		return errors.Wrapf(err, "Prune: Can't change current work directory to %s", MM_WD)
-	}
-	defer func() {
-		err = os.Chdir(wd)
-	if err != nil {
-		e = errors.Wrapf(err, "Prune: Can't change back to  work directory to %s", wd)
-	}
-		fmt.Printf("Changed back to working dir: %s", wd)
-	}()
-
-	fmt.Printf("Changed to working dir: %s", MM_WD)
-
-	a, err := commands.InitDBCommandContextCobra(command)
-	if err != nil {
-		return err
-	}
-	defer a.Srv().Shutdown()
-
-	chs, _ := a.Srv().Store.Channel().GetAll("5tfjpj5m8jdybbct11qy6idpih")
-
-	for _, ch := range chs {
-		fmt.Printf("channel: %s\n", ch.Name)
-	}
-	return nil
-}
+// func Run() (e error) {
+// 	wd, err := os.Getwd()
+// 	if err != nil {
+// 		return errors.Wrapf(err, "Prune: Can't get current work directory")
+// 	}
+// 
+//         // MM_WD, _  := filepath.Abs("~/go/src/mattermost-server")
+//         MM_WD := os.Getenv("PRUNE_MM_SERVER_PATH")
+//         // MM_WD := "/Users/zzh/go/src/mattermost-server"
+// 	err = os.Chdir(MM_WD)
+// 	if err != nil {
+// 		return errors.Wrapf(err, "Prune: Can't change current work directory to %s", MM_WD)
+// 	}
+// 	defer func() {
+// 		err = os.Chdir(wd)
+// 	if err != nil {
+// 		e = errors.Wrapf(err, "Prune: Can't change back to  work directory to %s", wd)
+// 	}
+// 		fmt.Printf("Changed back to working dir: %s", wd)
+// 	}()
+// 
+// 	fmt.Printf("Changed to working dir: %s", MM_WD)
+// 
+// 	a, err := commands.InitDBCommandContextCobra(command)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer a.Srv().Shutdown()
+// 
+// 	chs, _ := a.Srv().Store.Channel().GetAll("5tfjpj5m8jdybbct11qy6idpih")
+// 
+// 	for _, ch := range chs {
+// 		fmt.Printf("channel: %s\n", ch.Name)
+// 	}
+// 	return nil
+// }
 func mergeToChannels(srv *app.Server) (mergedChMap SimpleSpecificPolicy, err error) {
 	//from specific case the general case
 
 	mergedChMap = SimpleSpecificPolicy{}
 	// channels specific rules
 	for k, p := range policy.channel {
-		mlog.Debug(fmt.Sprintf("Prune: merging channel %s, period %d", k, p.period))
+		mlog.Debug(fmt.Sprintf("Prune: merging channel %s, period %d", k, p))
 		mergedChMap[k] = p
 	}
 
@@ -121,7 +121,7 @@ func mergeToChannels(srv *app.Server) (mergedChMap SimpleSpecificPolicy, err err
 		}
 
 		for _, ch := range *chs {
-			mlog.Debug(fmt.Sprintf("Prune: merging user %s channel %s, period %d", u, ch.Id, p.period))
+			mlog.Debug(fmt.Sprintf("Prune: merging user %s channel %s, period %d", u, ch.Id, p))
 			mergedChMap[ch.Id] = p
 
 		}
@@ -140,7 +140,7 @@ func mergeToChannels(srv *app.Server) (mergedChMap SimpleSpecificPolicy, err err
 		for _, ch := range *chs {
 			// not overwrite the specific channel
 			if _, ok := mergedChMap[ch.Id]; !ok {
-				mlog.Debug(fmt.Sprintf("Prune: merging team %s channel %s, period %d", k, ch.Id, p.period))
+				mlog.Debug(fmt.Sprintf("Prune: merging team %s channel %s, period %d", k, ch.Id, p))
 				mergedChMap[ch.Id] = p
 			}
 
@@ -160,7 +160,7 @@ func (pr *Prune) Prune() error {
 
 	for chid, p := range pr.merged {
 
-		if _, err := pr.pruneActions([]string{chid}, nil, p.period); err != nil {
+		if _, err := pr.PruneAction([]string{chid}, nil, p); err != nil {
 			return errors.Wrapf(err, "failed to call pruneActions().")
 		}
 		mlog.Debug(fmt.Sprintf("Prune: specific case, channel: %s, completed.", chid))
@@ -172,7 +172,7 @@ func (pr *Prune) Prune() error {
 func (pr *Prune) pruneGeneral() error {
 	ex := pr.fetchAllChannelIds(pr.merged)
 
-	if _, err := pr.pruneActions(nil, ex, policy.period); err != nil {
+	if _, err := pr.PruneAction(nil, ex, policy.period); err != nil {
 		return errors.Wrapf(err, "failed to call pruneActions().")
 	}
 
@@ -188,7 +188,7 @@ func (pr *Prune) fetchAllChannelIds(chsMap SimpleSpecificPolicy) (chIds []string
 }
 
 // TO DO: Only select necessary fields
-func (pr *Prune) pruneActions(ch []string, ex []string, period time.Duration) (*Stats, error) {
+func (pr *Prune) PruneAction(ch []string, ex []string, period time.Duration) (*Stats, error) {
 
 	var st Stats
 
