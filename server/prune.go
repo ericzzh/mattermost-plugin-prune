@@ -1,4 +1,4 @@
-package prune
+package main
 
 import (
 	"encoding/json"
@@ -43,7 +43,7 @@ type Prune struct {
 	merged   SimpleSpecificPolicy
 }
 
-func New(a *app.App) (*Prune, error) {
+func NewPrune(a *app.App) (*Prune, error) {
 
 	s := a.Srv()
 	// st, _ := json.Marshal(s.Config().SqlSettings)

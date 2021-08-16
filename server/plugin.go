@@ -10,14 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ericzzh/mattermost-plugin-prune/prune"
 	"github.com/mattermost/mattermost-server/v5/app"
 	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/mattermost/mattermost-server/v5/shared/i18n"
 	"github.com/mattermost/mattermost-server/v5/utils"
 	"github.com/pkg/errors"
-	"github.com/mattermost/mattermost-plugin-api/cluster"
+	// "github.com/mattermost/mattermost-plugin-api/cluster"
 )
 
 // Plugin implements the interface expected by the Mattermost server to communicate between the server and plugin processes.
@@ -34,7 +33,7 @@ type Plugin struct {
 	botID string
 
 	// backgroundJob is a job that executes periodically on only one plugin instance at a time
-	backgroundJob *cluster.Job
+	// backgroundJob *cluster.Job
 }
 
 // ServeHTTP demonstrates a plugin that handles HTTP requests by greeting the world.
@@ -66,16 +65,16 @@ func (p *Plugin) OnActivate() error {
 		return errors.Wrapf(err, "failed to register %s command", "prune")
 	}
 
-	job, cronErr := cluster.Schedule(
-		p.API,
-		"BackgroundJob",
-		cluster.MakeWaitForRoundedInterval(15*time.Minute),
-		p.BackgroundJob,
-	)
-	if cronErr != nil {
-		return errors.Wrap(cronErr, "failed to schedule background job")
-	}
-	p.backgroundJob = job
+	// job, cronErr := cluster.Schedule(
+	// 	p.API,
+	// 	"BackgroundJob",
+	// 	cluster.MakeWaitForRoundedInterval(15*time.Minute),
+	// 	p.BackgroundJob,
+	// )
+	// if cronErr != nil {
+	// 	return errors.Wrap(cronErr, "failed to schedule background job")
+	// }
+	// p.backgroundJob = job
 	return nil
 }
 
@@ -100,16 +99,16 @@ func (p *Plugin) executePruneCommand(args *model.CommandArgs) *model.CommandResp
 		err_str, _ := json.MarshalIndent(apperr, "", "\t")
 		return &model.CommandResponse{
 			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-                        Text:         fmt.Sprintf("Can't find user. Error: \n %v ", string(err_str)),
+			Text:         fmt.Sprintf("Can't find user. Error: \n %v ", string(err_str)),
 		}
 	}
 
-        if !strings.Contains(usr.Roles, "system_admin"){
+	if !strings.Contains(usr.Roles, "system_admin") {
 		return &model.CommandResponse{
 			ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,
-                        Text:         "You don't have permission to run this command.",
+			Text:         "You don't have permission to run this command.",
 		}
-        }
+	}
 
 	wd, err := os.Getwd()
 
@@ -158,7 +157,7 @@ func (p *Plugin) executePruneCommand(args *model.CommandArgs) *model.CommandResp
 				Text:         fmt.Sprintf("Please input a number"),
 			}
 		}
-		pr, err := prune.New(a)
+		pr, err := NewPrune(a)
 		if err != nil {
 			return &model.CommandResponse{
 				ResponseType: model.COMMAND_RESPONSE_TYPE_EPHEMERAL,

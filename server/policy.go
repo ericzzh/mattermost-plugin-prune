@@ -44,12 +44,13 @@
 //                    s.js.StartWorkers()
 //                         workers.start() + watch.start()
 //                    s.js.StartSchedulers()
-package prune
+package main
 
 import (
 	"time"
 
 	"github.com/mattermost/mattermost-server/v5/app"
+
 )
 
 type SimpleRetention struct {
@@ -79,3 +80,6 @@ func GetPolicy() SimplePolicy {
 	return policy
 }
 
+func ConvertFromConfig() {
+        
+}

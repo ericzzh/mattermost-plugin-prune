@@ -1,4 +1,4 @@
-package prune
+package main
 
 import (
 	"fmt"
@@ -144,7 +144,7 @@ func TestPrune(t *testing.T) {
 				X.Username: 10,
 			},
 		})
-		prObj, err := New(th.App)
+		prObj, err := NewPrune(th.App)
 		require.NoError(t, err, "should call New succussfully")
 
 		type temppl struct {
@@ -224,7 +224,7 @@ func TestPrune(t *testing.T) {
 			time.Sleep(1 * time.Second)
 		}
 
-		pr, err := New(th.App)
+		pr, err := NewPrune(th.App)
 		require.NoError(t, err)
 
 		endTime := model.GetMillisForTime(time.Now().Add(-time.Second * period))
@@ -348,7 +348,7 @@ func TestPrune(t *testing.T) {
 			time.Sleep(1 * time.Second)
 		}
 
-		pr, err := New(th.App)
+		pr, err := NewPrune(th.App)
 		require.NoError(t, err)
 
 		stats, err := pr.PruneAction([]string{A_3.Id}, nil, period)
@@ -435,7 +435,7 @@ func TestPrune(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		pr, err1 := New(th.App)
+		pr, err1 := NewPrune(th.App)
 		require.NoError(t, err1)
 
 		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
@@ -500,7 +500,7 @@ func TestPrune(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		pr, err1 := New(th.App)
+		pr, err1 := NewPrune(th.App)
 		require.NoError(t, err1)
 
 		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
@@ -563,7 +563,7 @@ func TestPrune(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		pr, err := New(th.App)
+		pr, err := NewPrune(th.App)
 		require.NoError(t, err)
 
 		stats, err := pr.PruneAction([]string{A_3.Id}, nil, 1)
@@ -627,7 +627,7 @@ func TestPrune(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		pr, err := New(th.App)
+		pr, err := NewPrune(th.App)
 		require.NoError(t, err)
 
 		stats, err := pr.PruneAction([]string{A_3.Id}, nil, 1)
@@ -676,7 +676,7 @@ func TestPrune(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		pr, err1 := New(th.App)
+		pr, err1 := NewPrune(th.App)
 		require.NoError(t, err1)
 
 		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 0)
@@ -727,7 +727,7 @@ func TestPrune(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		pr, err1 := New(th.App)
+		pr, err1 := NewPrune(th.App)
 		require.NoError(t, err1)
 
 		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
@@ -773,7 +773,7 @@ func TestPrune(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		pr, err1 := New(th.App)
+		pr, err1 := NewPrune(th.App)
 		require.NoError(t, err1)
 
 		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 0)
@@ -819,7 +819,7 @@ func TestPrune(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		pr, err1 := New(th.App)
+		pr, err1 := NewPrune(th.App)
 		require.NoError(t, err1)
 
 		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
@@ -862,7 +862,7 @@ func TestPrune(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		pr, err1 := New(th.App)
+		pr, err1 := NewPrune(th.App)
 		require.NoError(t, err1)
 
 		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
@@ -910,7 +910,7 @@ func TestPrune(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		pr, err1 := New(th.App)
+		pr, err1 := NewPrune(th.App)
 		require.NoError(t, err1)
 
 		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
@@ -990,7 +990,7 @@ func TestPrune(t *testing.T) {
 		})
 		time.Sleep(2 * time.Second)
 
-		pr, err1 := New(th.App)
+		pr, err1 := NewPrune(th.App)
 		require.NoError(t, err1)
 
 		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
@@ -1087,7 +1087,7 @@ func TestPrune(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		pr, err1 := New(th.App)
+		pr, err1 := NewPrune(th.App)
 		require.NoError(t, err1)
 
 		stats, err1 := pr.PruneAction([]string{A_3.Id}, nil, 1)
@@ -1150,7 +1150,7 @@ func TestPrune(t *testing.T) {
 
 		time.Sleep(2 * time.Second)
 
-		pr, err1 := New(th.App)
+		pr, err1 := NewPrune(th.App)
 		require.NoError(t, err1)
 
 		stats, err1 := pr.PruneAction(nil, []string{A_1.Id, uv.Id}, 1)

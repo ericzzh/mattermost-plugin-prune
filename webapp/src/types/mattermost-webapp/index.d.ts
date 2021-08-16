@@ -1,5 +1,6 @@
 export interface PluginRegistry {
-    registerPostTypeComponent(typeName: string, component: React.ElementType)
+        registerPostTypeComponent(typeName: string, component: React.ElementType)
 
-    // Add more if needed from https://developers.mattermost.com/extend/plugins/webapp/reference
+        // Add more if needed from https://developers.mattermost.com/extend/plugins/webapp/reference
+        registerAdminConsoleCustomSetting(key:string, component: React.ElementType,options: {showTitle:boolean})
 }

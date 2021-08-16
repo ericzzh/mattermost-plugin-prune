@@ -1,1 +1,4 @@
-{}
+{
+  "admin.permissions.teamScheme.selectTeamsTitle": "Select teams to override permissions",
+  "admin.permissions.teamScheme.selectTeamsDescription": "Select teams where permission exceptions are required."
+}

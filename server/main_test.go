@@ -1,4 +1,4 @@
-package prune
+package main
 
 import (
 	"flag"

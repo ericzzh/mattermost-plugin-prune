@@ -1,18 +1,40 @@
 const exec = require('child_process').exec;
 
 const path = require('path');
+const webpack = require('webpack');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const PLUGIN_ID = require('../plugin.json').id;
 
 const NPM_TARGET = process.env.npm_lifecycle_event; //eslint-disable-line no-process-env
+const targetIsRun = NPM_TARGET === 'run';
+const targetIsTest = NPM_TARGET === 'test';
+const targetIsStats = NPM_TARGET === 'stats';
+const targetIsDevServer = NPM_TARGET === 'dev-server';
+
+const DEV = targetIsRun || targetIsStats || targetIsDevServer;
+const CSP_UNSAFE_EVAL_IF_DEV = DEV ? ' \'unsafe-eval\'' : '';
+
 let mode = 'production';
-let devtool = '';
-if (NPM_TARGET === 'debug' || NPM_TARGET === 'debug:watch') {
+devtool = 'source-map';
+if (NPM_TARGET === 'debug' || NPM_TARGET === 'debug:watch' || NPM_TARGET === 'dev-server') {
     mode = 'development';
     devtool = 'source-map';
 }
 
-const plugins = [];
+const plugins = [
+    // new HtmlWebpackPlugin({
+    //     filename: 'root.html',
+    //     inject: 'head',
+    //     template: 'root.html',
+    //     meta: {
+    //         csp: {
+    //             'http-equiv': 'Content-Security-Policy',
+    //             content: 'script-src \'self\' cdn.rudderlabs.com/ js.stripe.com/v3 ' + CSP_UNSAFE_EVAL_IF_DEV,
+    //         },
+    //     },
+    // }),
+];
 if (NPM_TARGET === 'build:watch' || NPM_TARGET === 'debug:watch') {
     plugins.push({
         apply: (compiler) => {
@@ -34,7 +56,7 @@ if (NPM_TARGET === 'build:watch' || NPM_TARGET === 'debug:watch') {
     });
 }
 
-module.exports = {
+let config = {
     entry: [
         './src/index.tsx',
     ],
@@ -97,3 +119,40 @@ module.exports = {
     mode,
     plugins,
 };
+
+if (targetIsDevServer) {
+    config = {
+        ...config,
+        // devtool: 'eval-cheap-module-source-map',
+        devtool: 'source-map',
+        devServer: {
+            hot: true,
+            injectHot: true,
+            liveReload: false,
+            overlay: false,
+            proxy: [{
+                context: () => true,
+                bypass(req) {
+                    if (req.url.indexOf('/static/plugins/com.github.ericzzh.mattermost-plugin-prune') === 0) {
+                        return '/main.js'; // return the webpacked asset
+                    }
+                    return null;
+                },
+                logLevel: 'debug',
+                target: 'http://localhost:8065',
+                xfwd: true,
+                ws: true,
+            }],
+            port: 9005,
+            watchContentBase: true,
+            writeToDisk: false,
+        },
+        performance: false,
+        optimization: {
+            ...config.optimization,
+            splitChunks: false,
+        },
+    };
+}
+
+module.exports = config;
