@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"encoding/json"
@@ -11,14 +11,15 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/mattermost/gorp"
 	// "github.com/mattermost/mattermost-server/cmd/mattermost/commands"
-	"github.com/mattermost/mattermost-server/v5/app"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/v6/app"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
+	"github.com/mattermost/mattermost-server/v6/store"
 	"github.com/pkg/errors"
 
 	"time"
 
-	"github.com/mattermost/mattermost-server/v5/store/sqlstore"
+	"github.com/mattermost/mattermost-server/v6/store/sqlstore"
 )
 
 type Stats struct {
@@ -68,7 +69,7 @@ func NewPrune(a *app.App) (*Prune, error) {
 // 	if err != nil {
 // 		return errors.Wrapf(err, "Prune: Can't get current work directory")
 // 	}
-// 
+//
 //         // MM_WD, _  := filepath.Abs("~/go/src/mattermost-server")
 //         MM_WD := os.Getenv("PRUNE_MM_SERVER_PATH")
 //         // MM_WD := "/Users/zzh/go/src/mattermost-server"
@@ -83,17 +84,17 @@ func NewPrune(a *app.App) (*Prune, error) {
 // 	}
 // 		fmt.Printf("Changed back to working dir: %s", wd)
 // 	}()
-// 
+//
 // 	fmt.Printf("Changed to working dir: %s", MM_WD)
-// 
+//
 // 	a, err := commands.InitDBCommandContextCobra(command)
 // 	if err != nil {
 // 		return err
 // 	}
 // 	defer a.Srv().Shutdown()
-// 
+//
 // 	chs, _ := a.Srv().Store.Channel().GetAll("5tfjpj5m8jdybbct11qy6idpih")
-// 
+//
 // 	for _, ch := range chs {
 // 		fmt.Printf("channel: %s\n", ch.Name)
 // 	}
@@ -117,13 +118,16 @@ func mergeToChannels(srv *app.Server) (mergedChMap SimpleSpecificPolicy, err err
 		}
 		chs, err := srv.Store.Channel().GetChannels("", usr.Id, true, 0)
 		if err != nil {
+			if _, ok := err.(*store.ErrNotFound); ok {
+				continue
+			}
 			return nil, errors.Wrapf(err, "Prune: get user(%s) direct channel wrong.", u)
 		}
 
-		for _, ch := range *chs {
-			mlog.Debug(fmt.Sprintf("Prune: merging user %s channel %s, period %d", u, ch.Id, p))
-			mergedChMap[ch.Id] = p
-
+		for _, ch := range chs {
+			if ch.Type == model.ChannelTypeDirect {
+				mergedChMap[ch.Id] = p
+			}
 		}
 	}
 
@@ -137,7 +141,7 @@ func mergeToChannels(srv *app.Server) (mergedChMap SimpleSpecificPolicy, err err
 		}
 
 		// mlog.Debug(fmt.Sprintf("Prune: print all team %v, channels. %v", k, *chs))
-		for _, ch := range *chs {
+		for _, ch := range chs {
 			// not overwrite the specific channel
 			if _, ok := mergedChMap[ch.Id]; !ok {
 				mlog.Debug(fmt.Sprintf("Prune: merging team %s channel %s, period %d", k, ch.Id, p))
@@ -419,7 +423,7 @@ func (pr *Prune) PruneAction(ch []string, ex []string, period time.Duration) (*S
 		} else {
 			//Delete a reaction doesn't delete a reaction, but clear HasReactions flag
 			//so we don't whethere the reaction exists in Reactions table, we have to add all to consider.
-                        //same as Thread
+			//same as Thread
 			reactionMap[root.post.Id] = false
 		}
 
@@ -456,14 +460,14 @@ func (pr *Prune) PruneAction(ch []string, ex []string, period time.Duration) (*S
 
 	}
 
-        var rcnt int
-        for _, hasRt := range reactionMap {
-           if hasRt {
-               rcnt++
-           }
-        }
+	var rcnt int
+	for _, hasRt := range reactionMap {
+		if hasRt {
+			rcnt++
+		}
+	}
 
-        mlog.Info(fmt.Sprintf("Prune: %d active reaction post Ids", rcnt))
+	mlog.Info(fmt.Sprintf("Prune: %d active reaction post Ids", rcnt))
 
 	// Save all file information
 	// to delay to last to delete. because if fail to delete posts, there is a chance to roll back.
@@ -665,7 +669,7 @@ func (pr *Prune) PruneAction(ch []string, ex []string, period time.Duration) (*S
 
 func getQueryBuilder(ss *sqlstore.SqlStore) sq.StatementBuilderType {
 	builder := sq.StatementBuilder.PlaceholderFormat(sq.Question)
-	if ss.DriverName() == model.DATABASE_DRIVER_POSTGRES {
+	if ss.DriverName() == model.DatabaseDriverPostgres {
 		builder = builder.PlaceholderFormat(sq.Dollar)
 	}
 	return builder

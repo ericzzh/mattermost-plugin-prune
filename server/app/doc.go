@@ -1,5 +1,4 @@
-// retention is a self implemented data retention solution
-// It's very simple, but hope to resolve our basic requirement.
+// app is a simple data retention plugin
 //
 // *. Default rentention rule follows the config setting
 // *. Specific rentention rule is defined in a server csv file
@@ -44,42 +43,4 @@
 //                    s.js.StartWorkers()
 //                         workers.start() + watch.start()
 //                    s.js.StartSchedulers()
-package main
-
-import (
-	"time"
-
-	"github.com/mattermost/mattermost-server/v5/app"
-
-)
-
-type SimpleRetention struct {
-	srv *app.Server
-}
-
-const SIMPLE_RETENTION_KIND_TEAM = "Team"
-const SIMPLE_RETENTION_KIND_CHANNEL = "Channel"
-const SIMPLE_RETENTION_KIND_USER = "User"
-
-type SimplePolicy struct {
-	period  time.Duration
-	team    SimpleSpecificPolicy
-	channel SimpleSpecificPolicy
-	user  SimpleSpecificPolicy
-}
-
-type SimpleSpecificPolicy map[string]time.Duration 
-
-var policy SimplePolicy
-
-func SetPolicy(p SimplePolicy) {
-	policy = p
-}
-
-func GetPolicy() SimplePolicy {
-	return policy
-}
-
-func ConvertFromConfig() {
-        
-}
+package app

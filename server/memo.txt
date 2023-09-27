@@ -52,3 +52,6 @@ ThreadMemberships
 Threads
 Preferences
 ChannelMembers ** There is no post speicific data in this table, but statistics. we won't udpate the table, it's too hard for us to udpate these statistics figures. HOPE no problem **
+
+
+MM_SERVICESETTINGS_ENABLEDEVELOPER=1 make dist

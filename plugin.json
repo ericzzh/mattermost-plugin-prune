@@ -6,7 +6,6 @@
     "support_url": "https://github.com/ericzzh/mattermost-plugin-prune",
     "release_notes_url": "",
     "icon_path": "",
-    "version": "0.1.0",
     "min_server_version": "5.37.0",
     "server": {
         "executables": {
@@ -15,44 +14,17 @@
             "windows-amd64": "server/dist/plugin-windows-amd64.exe"
         }
     },
-    "webapp": {
-        "bundle_path": "webapp/dist/main.js"
-    },
+    "webapp": null,
     "settings_schema": {
         "header": "",
         "footer": "",
         "settings": [
             {
-                "key": "GeneralPeriod",
-                "display_name": "General prune period",
-                "type": "number",
+                "key": "Policy",
+                "display_name": "Policy Settings",
+                "type": "longtext",
                 "help_text": "",
-                "placeholder": "",
-                "default": 0
-            },
-            {
-                "key": "TeamPolicy",
-                "display_name": "Set specific prune policy for teams",
-                "type": "custom",
-                "help_text": "Input format: team_name=period",
-                "placeholder": "",
-                "default": ""
-            },
-            {
-                "key": "ChannelPolicy",
-                "display_name": "Set specific prune policy for channel",
-                "type": "custom",
-                "help_text": "",
-                "placeholder": "",
-                "default": ""
-            },
-            {
-                "key": "UserPolicy",
-                "display_name": "Set specific prune policy for users",
-                "type": "custom",
-                "help_text": "",
-                "placeholder": "",
-                "default": ""
+                "placeholder": ""
             }
 	]
     }

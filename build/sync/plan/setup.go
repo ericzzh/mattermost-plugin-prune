@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	git "github.com/go-git/go-git/v5"
+	git "gopkg.in/src-d/go-git.v4"
 )
 
 // RepoID identifies a repository - either plugin or template.

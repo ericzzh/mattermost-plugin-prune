@@ -5,7 +5,7 @@ import (
 	"os"
 	// "path/filepath"
 
-	"github.com/mattermost/mattermost-server/v5/cmd/mattermost/commands"
+	"github.com/mattermost/mattermost-server/v6/cmd/mattermost/commands"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )

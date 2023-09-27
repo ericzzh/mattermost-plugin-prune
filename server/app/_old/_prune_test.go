@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -16,11 +16,11 @@ import (
 	// "github.com/mattermost/mattermost-server/v5/shared/mlog"
 	// 	// "github.com/mattermost/mattermost-server/v5/store/storetest"
 	// 	// "github.com/mattermost/mattermost-server/v5/store/sqlstore"
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/shared/mlog"
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/shared/mlog"
 
 	// 	// "github.com/mattermost/mattermost-server/v5/store"
-	"github.com/mattermost/mattermost-server/v5/api4"
+	"github.com/mattermost/mattermost-server/v6/api4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -82,44 +82,57 @@ func TestPrune(t *testing.T) {
 	_ = mlog.Debug
 	_ = fmt.Sprintf
 
-	t.Run("testing merge channel", func(t *testing.T) {
+	t.Run("merge-channels", func(t *testing.T) {
 
 		// Data preparing
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_1 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_OPEN, A.Id)
+		A_1 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypeOpen, A.Id)
 		th.App.AddUserToChannel(U, A_1, false)
-		A_2 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_2 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_2, false)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		B := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(B.Id)
+
 		th.LinkUserToTeam(U, B)
-		B_1 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_OPEN, B.Id)
+		B_1 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypeOpen, B.Id)
 		th.App.AddUserToChannel(U, B_1, false)
-		B_2 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, B.Id)
+		B_2 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, B.Id)
 		th.App.AddUserToChannel(U, B_2, false)
-		B_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, B.Id)
+		B_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, B.Id)
 		th.App.AddUserToChannel(U, B_3, false)
 
 		C := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(C.Id)
+
 		th.LinkUserToTeam(U, C)
-		C_1 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_OPEN, C.Id)
+		C_1 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypeOpen, C.Id)
 		th.App.AddUserToChannel(U, C_1, false)
-		C_2 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, C.Id)
+		C_2 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, C.Id)
 		th.App.AddUserToChannel(U, C_2, false)
-		C_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, C.Id)
+		C_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, C.Id)
 		th.App.AddUserToChannel(U, C_3, false)
 
-		CreateDmChannel(th, X, Y)
-		CreateDmChannel(th, X, U)
+		ch := CreateDmChannel(th, X, Y)
+		defer th.App.PermanentDeleteChannel(ch)
 
-		CreateDmChannel(th, Y, Z)
-		CreateDmChannel(th, Y, V)
+		ch = CreateDmChannel(th, X, U)
+		defer th.App.PermanentDeleteChannel(ch)
+		ch = CreateDmChannel(th, Y, Z)
+		defer th.App.PermanentDeleteChannel(ch)
 
-		CreateDmChannel(th, Z, X)
-		CreateDmChannel(th, Z, W)
+		ch = CreateDmChannel(th, Y, V)
+		defer th.App.PermanentDeleteChannel(ch)
+
+		ch = CreateDmChannel(th, Z, X)
+		defer th.App.PermanentDeleteChannel(ch)
+		ch = CreateDmChannel(th, Z, W)
+		defer th.App.PermanentDeleteChannel(ch)
 
 		// testing
 		uc, err := th.Server.Store.Channel().GetChannels("", X.Id, true, 0)
@@ -144,6 +157,8 @@ func TestPrune(t *testing.T) {
 				X.Username: 10,
 			},
 		})
+                defer SetPolicy(SimplePolicy{})
+
 		prObj, err := NewPrune(th.App)
 		require.NoError(t, err, "should call New succussfully")
 
@@ -172,19 +187,21 @@ func TestPrune(t *testing.T) {
 				{"C_2", C_2.Id, 9},
 				{"B_3", B_3.Id, 2},
 				{"C_3", C_3.Id, 3},
-				{"X", []*model.Channel(*uc)[0].Id, 10},
-				{"X", []*model.Channel(*uc)[1].Id, 10},
-				{"X", []*model.Channel(*uc)[2].Id, 10},
+				{"X", []*model.Channel(uc)[0].Id, 10},
+				{"X", []*model.Channel(uc)[1].Id, 10},
+				{"X", []*model.Channel(uc)[2].Id, 10},
 			},
 		)
 
 	})
 
-	t.Run("testing prune root posts and some file", func(t *testing.T) {
+	t.Run("prune-roots-and-files", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		const period = 7
@@ -199,21 +216,21 @@ func TestPrune(t *testing.T) {
 		for i := 0; i < POSTS_COUNTS; i++ {
 			var fileId string
 			if i%2 == 0 {
-				fileResp, resp := Client.UploadFile([]byte("data"), A_3.Id, "test"+strconv.Itoa(i))
-				require.Nil(t, resp.Error, "expected no error")
+				fileResp,_,respErr:= Client.UploadFile([]byte("data"), A_3.Id, "test"+strconv.Itoa(i))
+				require.Nil(t, respErr, "expected no error")
 				fileId = fileResp.FileInfos[0].Id
-				require.NotEmptyf(t, fileId, "upload file should not be empty.", fileResp.ToJson())
+				require.NotEmptyf(t, fileId, "upload file should not be empty.", fileResp)
 
 			}
 
-			post, _ := Client.CreatePost(&model.Post{
+			post, _, _ := Client.CreatePost(&model.Post{
 				ChannelId: A_3.Id,
 				Message:   strconv.Itoa(i) + ":with files",
 				FileIds:   model.StringArray{fileId},
 			})
 
 			post, err := th.App.GetSinglePost(post.Id)
-			require.Nilf(t, err, "post should be there.. %v, but there is err:  %v", post.ToJson(), err.ToJson())
+			require.Nilf(t, err, "post should be there.. %+v, but there is err:  %+v", post, err)
 
 			if i%2 == 0 {
 				fileinfo, err := th.App.GetFileInfosForPost((*post).Id, true)
@@ -298,11 +315,13 @@ func TestPrune(t *testing.T) {
 
 	})
 
-	t.Run("testing prune thread posts and some file", func(t *testing.T) {
+	t.Run("prune-threads-and-files", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		const period = 7
@@ -314,22 +333,22 @@ func TestPrune(t *testing.T) {
 
 		fileinfos_backup := []*model.FileInfo{}
 
-		root, resp := Client.CreatePost(&model.Post{
+		root,_,respErr:= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message",
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
 		for i := 0; i < POSTS_COUNTS-1; i++ {
 			var fileId string
 			if i%2 == 0 {
-				fileResp, _ := Client.UploadFile([]byte("data"), A_3.Id, "test"+strconv.Itoa(i))
+				fileResp, _, _ := Client.UploadFile([]byte("data"), A_3.Id, "test"+strconv.Itoa(i))
 				fileId = fileResp.FileInfos[0].Id
-				require.NotEmptyf(t, fileId, "upload file should not be empty.", fileResp.ToJson())
+				require.NotEmptyf(t, fileId, "upload file should not be empty.", fileResp)
 
 			}
 
-			post, _ := Client.CreatePost(&model.Post{
+			post, _, _ := Client.CreatePost(&model.Post{
 				ChannelId: A_3.Id,
 				Message:   strconv.Itoa(i) + ":with files",
 				FileIds:   model.StringArray{fileId},
@@ -337,7 +356,7 @@ func TestPrune(t *testing.T) {
 			})
 
 			post, err := th.App.GetSinglePost(post.Id)
-			require.Nilf(t, err, "post should be there.. %v, but there is err:  %v", post.ToJson(), err.ToJson())
+			require.Nilf(t, err, "post should be there.. %+v, but there is err:  %+v", post, err)
 
 			if i%2 == 0 {
 				fileinfo, err := th.App.GetFileInfosForPost((*post).Id, true)
@@ -403,35 +422,36 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 8, stats.Db_posts+stat2.Db_posts, "deleted from Posts is not correct")
 	})
 
-	t.Run("testing prune root pinned posts with files", func(t *testing.T) {
+	t.Run("donot-prune-pinned-root-with-files", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		fileResp, resp := Client.UploadFile([]byte("data"), A_3.Id, "test1")
-		require.Nil(t, resp.Error, "expected no error")
+		fileResp,_,respErr:= Client.UploadFile([]byte("data"), A_3.Id, "test1")
+		require.Nil(t, respErr, "expected no error")
 		fileId := fileResp.FileInfos[0].Id
-		require.NotEmptyf(t, fileId, "upload file should not be empty.", fileResp.ToJson())
+		require.NotEmptyf(t, fileId, "upload file should not be empty.", fileResp)
 
-		post, resp := Client.CreatePost(&model.Post{
+		post,_,respErr:= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "pinned root message",
 			FileIds:   model.StringArray{fileId},
 		})
 
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
 		fileinfo, err := th.App.GetFileInfosForPost((*post).Id, true)
 		require.Nil(t, err)
 
-		b, resp := Client.PinPost(post.Id)
-		require.Nil(t, resp.Error, "expected no error")
-		require.Equalf(t, true, b, "pin should be sucessful.")
+		_,respErr= Client.PinPost(post.Id)
+		require.Nil(t, respErr, "expected no error")
 
 		time.Sleep(2 * time.Second)
 
@@ -444,7 +464,7 @@ func TestPrune(t *testing.T) {
 		posts, _ := th.App.GetPosts(A_3.Id, 0, 100)
 		assert.GreaterOrEqualf(t, len(posts.Posts), 1, "pinned post should not be delete.")
 
-		b, err = th.App.FileExists(fileinfo[0].Path)
+                b, err := th.App.FileExists(fileinfo[0].Path)
 		require.Nil(t, err, "expected no error")
 		assert.Equalf(t, true, b, "file: %v should not be deleted.", fileinfo[0].Path)
 
@@ -464,39 +484,39 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 1, stats.Db_posts, "deleted from Posts is not correct")
 	})
 
-	t.Run("testing prune root unpinned posts", func(t *testing.T) {
+	t.Run("prune-unpinned-roots", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		fileResp, resp := Client.UploadFile([]byte("data"), A_3.Id, "test1")
-		require.Nil(t, resp.Error, "expected no error")
+		fileResp,_,respErr:= Client.UploadFile([]byte("data"), A_3.Id, "test1")
+		require.Nil(t, respErr, "expected no error")
 		fileId := fileResp.FileInfos[0].Id
-		require.NotEmptyf(t, fileId, "upload file should not be empty.", fileResp.ToJson())
+		require.NotEmptyf(t, fileId, "upload file should not be empty.", fileResp)
 
-		post, resp := Client.CreatePost(&model.Post{
+		post,_,respErr:= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "pinned root message",
 			FileIds:   model.StringArray{fileId},
 		})
 
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
 		fileinfo, err := th.App.GetFileInfosForPost((*post).Id, true)
 		require.Nil(t, err)
 
-		b, resp := Client.PinPost(post.Id)
-		require.Nil(t, resp.Error, "expected no error")
-		require.Equalf(t, true, b, "pin should be sucessful.")
+		_,respErr= Client.PinPost(post.Id)
+		require.Nil(t, respErr, "expected no error")
 
-		b, resp = Client.UnpinPost(post.Id)
-		require.Nil(t, resp.Error, "expected no error")
-		require.Equalf(t, true, b, "unpin should be sucessful.")
+		_,respErr= Client.UnpinPost(post.Id)
+		require.Nil(t, respErr, "expected no error")
 
 		time.Sleep(2 * time.Second)
 
@@ -509,7 +529,7 @@ func TestPrune(t *testing.T) {
 		posts, _ := th.App.GetPosts(A_3.Id, 0, 100)
 		assert.Equalf(t, len(posts.Posts), 0, "unpinned post should  be delete.")
 
-		b, err = th.App.FileExists(fileinfo[0].Path)
+                b, err := th.App.FileExists(fileinfo[0].Path)
 		require.Nil(t, err, "expected no error")
 		assert.Equalf(t, false, b, "file: %v should  be deleted.", fileinfo[0].Path)
 
@@ -528,38 +548,39 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 0, stats.Db_preference, "deleted from Preference is not correct")
 		assert.Equalf(t, 4, stats.Db_posts, "deleted from Posts is not correct")
 	})
-	t.Run("testing prune thread pinned posts", func(t *testing.T) {
+	t.Run("donot-prune-pinned-threads", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		root, resp := Client.CreatePost(&model.Post{
+		root,_,respErr:= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message with threads",
 		})
 
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		_, resp = Client.CreatePost(&model.Post{
+		_,_,respErr= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			RootId:    root.Id,
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		thread, resp := Client.CreatePost(&model.Post{
+		thread,_,respErr:= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			RootId:    root.Id,
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		b, resp := Client.PinPost(thread.Id)
-		require.Nil(t, resp.Error, "expected no error")
-		require.Equalf(t, true, b, "pin should be sucessful.")
+		_,respErr= Client.PinPost(thread.Id)
+		require.Nil(t, respErr, "expected no error")
 
 		time.Sleep(2 * time.Second)
 
@@ -588,42 +609,42 @@ func TestPrune(t *testing.T) {
 
 	})
 
-	t.Run("testing prune thread unpinned posts", func(t *testing.T) {
+	t.Run("prune-unpinned-threads", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		root, resp := Client.CreatePost(&model.Post{
+		root,_,respErr:= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message with threads",
 		})
 
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		_, resp = Client.CreatePost(&model.Post{
+		_,_,respErr= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			RootId:    root.Id,
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		thread, resp := Client.CreatePost(&model.Post{
+		thread,_,respErr:= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			RootId:    root.Id,
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		b, resp := Client.PinPost(thread.Id)
-		require.Nil(t, resp.Error, "expected no error")
-		require.Equalf(t, true, b, "pin should be sucessful.")
+		_,respErr= Client.PinPost(thread.Id)
+		require.Nil(t, respErr, "expected no error")
 
-		b, resp = Client.UnpinPost(thread.Id)
-		require.Nil(t, resp.Error, "expected no error")
-		require.Equalf(t, true, b, "unpin should be sucessful.")
+		_,respErr= Client.UnpinPost(thread.Id)
+		require.Nil(t, respErr, "expected no error")
 
 		time.Sleep(2 * time.Second)
 
@@ -651,28 +672,29 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 6, stats.Db_posts, "deleted from Posts is not correct") // pin * 2, unpin * 2, origin, sys
 
 	})
-	t.Run("testing prune deleted root with files for permanent case", func(t *testing.T) {
+	t.Run("prune-deleted-root-with-files-permanent", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		fileResp, resp := Client.UploadFile([]byte("data"), A_3.Id, "test1")
-		root, resp := Client.CreatePost(&model.Post{
+		fileResp,_,respErr:= Client.UploadFile([]byte("data"), A_3.Id, "test1")
+		root,_,respErr:= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message",
 			FileIds:   model.StringArray{fileResp.FileInfos[0].Id},
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 		fileinfo, err := th.App.GetFileInfosForPost((*root).Id, true)
 
-		b, resp := Client.DeletePost(root.Id)
-		require.Nil(t, resp.Error, "expected no error")
-		require.Equalf(t, true, b, "delete should be sucessful.")
+		_,respErr= Client.DeletePost(root.Id)
+		require.Nil(t, respErr, "expected no error")
 
 		time.Sleep(2 * time.Second)
 
@@ -685,7 +707,7 @@ func TestPrune(t *testing.T) {
 		posts, _ := th.App.GetPosts(A_3.Id, 0, 100)
 		assert.Equalf(t, len(posts.Posts), 1, "deleted root should be pruned.")
 
-		b, err = th.App.FileExists(fileinfo[0].Path)
+                b, err := th.App.FileExists(fileinfo[0].Path)
 		require.Nil(t, err, "expected no error")
 		assert.Equalf(t, false, b, "file: %v should  be deleted. %v", fileinfo[0].Path)
 
@@ -705,25 +727,26 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 1, stats.Db_posts, "deleted from Posts is not correct")
 	})
 
-	t.Run("testing prune deleted root for specific case", func(t *testing.T) {
+	t.Run("prune-deleted-roots-specific", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		root, resp := Client.CreatePost(&model.Post{
+		root,_,respErr:= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message",
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		b, resp := Client.DeletePost(root.Id)
-		require.Nil(t, resp.Error, "expected no error")
-		require.Equalf(t, true, b, "delete should be sucessful.")
+		_,respErr= Client.DeletePost(root.Id)
+		require.Nil(t, respErr, "expected no error")
 
 		time.Sleep(2 * time.Second)
 
@@ -748,22 +771,24 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 0, stats.Db_preference, "deleted from Preference is not correct")
 		assert.Equalf(t, 2, stats.Db_posts, "deleted from Posts is not correct")
 	})
-	t.Run("testing prune deleted thread for permanent case", func(t *testing.T) {
+	t.Run("prune-deleted-threads-permanent", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		root, _ := Client.CreatePost(&model.Post{
+		root, _, _ := Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message",
 		})
 
-		thread, _ := Client.CreatePost(&model.Post{
+		thread, _, _ := Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "thread message",
 			RootId:    root.Id,
@@ -794,22 +819,24 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 0, stats.Db_preference, "deleted from Preference is not correct")
 		assert.Equalf(t, 0, stats.Db_posts, "deleted from Posts is not correct")
 	})
-	t.Run("testing prune deleted thread for specific case", func(t *testing.T) {
+	t.Run("prune-deleted-threads-specific", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		root, _ := Client.CreatePost(&model.Post{
+		root, _, _ := Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message",
 		})
 
-		thread, _ := Client.CreatePost(&model.Post{
+		thread, _, _ := Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "thread message",
 			RootId:    root.Id,
@@ -840,17 +867,19 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 0, stats.Db_preference, "deleted from Preference is not correct")
 		assert.Equalf(t, 3, stats.Db_posts, "deleted from Posts is not correct")
 	})
-	t.Run("testing not prune edit root", func(t *testing.T) {
+	t.Run("donot-prune-edited-root", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		root, _ := Client.CreatePost(&model.Post{
+		root, _, _ := Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message",
 		})
@@ -883,21 +912,23 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 0, stats.Db_preference, "deleted from Preference is not correct")
 		assert.Equalf(t, 3, stats.Db_posts, "deleted from Posts is not correct")
 	})
-	t.Run("testing not prune edit thread", func(t *testing.T) {
+	t.Run("donot-prune-edited-thread", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		root, _ := Client.CreatePost(&model.Post{
+		root, _, _ := Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message",
 		})
-		thread, _ := Client.CreatePost(&model.Post{
+		thread, _, _ := Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message",
 			RootId:    root.Id,
@@ -931,58 +962,60 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 0, stats.Db_preference, "deleted from Preference is not correct")
 		assert.Equalf(t, 4, stats.Db_posts, "deleted from Posts is not correct")
 	})
-	t.Run("testing add flag and reaction", func(t *testing.T) {
+	t.Run("prune-flagged-reacted", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		root, resp := Client.CreatePost(&model.Post{
+		root,_,respErr:= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message",
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		_, resp = Client.SaveReaction(&model.Reaction{
+		_, _,respErr= Client.SaveReaction(&model.Reaction{
 			UserId:    U.Id,
 			PostId:    root.Id,
 			EmojiName: "innocent",
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		// _, resp = Client.DeleteReaction(rca)
-		// require.Nil(t, resp.Error, "expected no error")
+		// _,respErr= Client.DeleteReaction(rca)
+		// require.Nil(t, respErr, "expected no error")
 
-		Client.UpdatePreferences(U.Id, &model.Preferences{
+		Client.UpdatePreferences(U.Id, model.Preferences{
 			model.Preference{
 				UserId:   U.Id,
 				Category: "flagged_post",
 				Name:     root.Id},
 		})
 
-		thread, _ := Client.CreatePost(&model.Post{
+		thread, _, _ := Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message",
 			RootId:    root.Id,
 		})
 
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		_, resp = Client.SaveReaction(&model.Reaction{
+		_,_,respErr= Client.SaveReaction(&model.Reaction{
 			UserId:    U.Id,
 			PostId:    thread.Id,
 			EmojiName: "innocent",
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		// _, resp = Client.DeleteReaction(rca)
-		// require.Nil(t, resp.Error, "expected no error")
+		// _,respErr= Client.DeleteReaction(rca)
+		// require.Nil(t, respErr, "expected no error")
 
-		Client.UpdatePreferences(U.Id, &model.Preferences{
+		Client.UpdatePreferences(U.Id, model.Preferences{
 			model.Preference{
 				UserId:   U.Id,
 				Category: "flagged_post",
@@ -1011,79 +1044,81 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 2, stats.Db_preference, "deleted from Preference is not correct")
 		assert.Equalf(t, 3, stats.Db_posts, "deleted from Posts is not correct")
 	})
-	t.Run("testing delete flag and reaction", func(t *testing.T) {
+	t.Run("prune-deleted-flag-reaction", func(t *testing.T) {
 
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
 		th.LinkUserToTeam(U, A)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
 		th.App.AddUserToChannel(U, A_3, false)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		root, resp := Client.CreatePost(&model.Post{
+		root,_,respErr:= Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message",
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		rca, resp := Client.SaveReaction(&model.Reaction{
+		rca,_,respErr:= Client.SaveReaction(&model.Reaction{
 			UserId:    U.Id,
 			PostId:    root.Id,
 			EmojiName: "innocent",
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		_, resp = Client.DeleteReaction(rca)
-		require.Nil(t, resp.Error, "expected no error")
+		_,respErr= Client.DeleteReaction(rca)
+		require.Nil(t, respErr, "expected no error")
 
-		_, resp = Client.UpdatePreferences(U.Id, &model.Preferences{
+		_,respErr= Client.UpdatePreferences(U.Id, model.Preferences{
 			model.Preference{
 				UserId:   U.Id,
 				Category: "flagged_post",
 				Name:     root.Id},
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		_, resp = Client.DeletePreferences(U.Id, &model.Preferences{
+		_,respErr= Client.DeletePreferences(U.Id, model.Preferences{
 			model.Preference{
 				UserId:   U.Id,
 				Category: "flagged_post",
 				Name:     root.Id},
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		thread, _ := Client.CreatePost(&model.Post{
+		thread, _, _ := Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "root message",
 			RootId:    root.Id,
 		})
 
-		rca, resp = Client.SaveReaction(&model.Reaction{
+		rca,_,respErr= Client.SaveReaction(&model.Reaction{
 			UserId:    U.Id,
 			PostId:    thread.Id,
 			EmojiName: "innocent",
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		_, resp = Client.DeleteReaction(rca)
-		require.Nil(t, resp.Error, "expected no error")
+		_,respErr= Client.DeleteReaction(rca)
+		require.Nil(t, respErr, "expected no error")
 
-		Client.UpdatePreferences(U.Id, &model.Preferences{
+		Client.UpdatePreferences(U.Id, model.Preferences{
 			model.Preference{
 				UserId:   U.Id,
 				Category: "flagged_post",
 				Name:     thread.Id},
 		})
 
-		_, resp = Client.DeletePreferences(U.Id, &model.Preferences{
+		_,respErr= Client.DeletePreferences(U.Id, model.Preferences{
 			model.Preference{
 				UserId:   U.Id,
 				Category: "flagged_post",
 				Name:     thread.Id},
 		})
 
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
 		time.Sleep(2 * time.Second)
 
@@ -1108,45 +1143,57 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 0, stats.Db_preference, "deleted from Preference is not correct")
 		assert.Equalf(t, 3, stats.Db_posts, "deleted from Posts is not correct")
 	})
-	t.Run("testing excepted channels", func(t *testing.T) {
+	t.Run("prune-excepted-channels", func(t *testing.T) {
 		A := th.CreateTeam()
+		defer th.App.PermanentDeleteTeamId(A.Id)
+
+		fmt.Printf("*********** U.id:%+v\n", U.Username)
+		fmt.Printf("*********** V.id:%+v\n", V.Username)
+		fmt.Printf("*********** W.id:%+v\n", W.Username)
+
 		th.LinkUserToTeam(U, A)
-		A_1 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
-                // fmt.Printf("*********** A_1:%s\n",A_1.Id)
+		A_1 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
+		// fmt.Printf("*********** A_1:%s\n",A_1.Id)
 		th.App.AddUserToChannel(U, A_1, false)
-		A_3 := th.CreateChannelWithClientAndTeam(Client, model.CHANNEL_PRIVATE, A.Id)
-                // fmt.Printf("*********** A_3:%s\n",A_3.Id)
+
+		A_3 := th.CreateChannelWithClientAndTeam(Client, model.ChannelTypePrivate, A.Id)
+		// fmt.Printf("*********** A_3:%s\n",A_3.Id)
 		th.App.AddUserToChannel(U, A_3, false)
-                uv := CreateDmChannel(th, U, V)
-                // fmt.Printf("*********** uv:%s\n",uv.Id)
-                uw := CreateDmChannel(th, U, W)
-                // fmt.Printf("*********** uw:%s\n",uw.Id)
+		uv := CreateDmChannel(th, U, V)
+		defer th.App.PermanentDeleteChannel(uv)
+		// fmt.Printf("*********** uv:%s\n",uv.Id)
+		uw := CreateDmChannel(th, U, W)
+		defer th.App.PermanentDeleteChannel(uw)
+		// fmt.Printf("*********** uw:%s\n",uw.Id)
 
 		U.Password = "Pa$$word11"
 		LoginWithClient(U, Client)
 
-		_, resp := Client.CreatePost(&model.Post{
+		_,_,respErr := Client.CreatePost(&model.Post{
 			ChannelId: A_1.Id,
 			Message:   "A_1 message",
 		})
-		require.Nil(t, resp.Error, "expected no error")
-                
-		_, resp = Client.CreatePost(&model.Post{
+		require.Nil(t, respErr, "expected no error")
+
+		_,_,respErr = Client.CreatePost(&model.Post{
 			ChannelId: A_3.Id,
 			Message:   "A_3 message",
 		})
 
-		_, resp = Client.CreatePost(&model.Post{
+		_,_,respErr = Client.CreatePost(&model.Post{
 			ChannelId: uv.Id,
 			Message:   "uv message",
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
 
-		_, resp = Client.CreatePost(&model.Post{
+		_,_,respErr= Client.CreatePost(&model.Post{
 			ChannelId: uw.Id,
 			Message:   "uw message",
 		})
-		require.Nil(t, resp.Error, "expected no error")
+		require.Nil(t, respErr, "expected no error")
+
+		cntSysTms := countSystemPostsFromTeam(t, th, A.Id)
+		fmt.Printf("*********** A team system msg count:%v\n", cntSysTms)
 
 		time.Sleep(2 * time.Second)
 
@@ -1156,13 +1203,13 @@ func TestPrune(t *testing.T) {
 		stats, err1 := pr.PruneAction(nil, []string{A_1.Id, uv.Id}, 1)
 		require.NoError(t, err1, "there should be no errors after first pruning.")
 
-                // system message:
-                //    town square: 2 ( admin, U, join team)
-                //    off topics: 2 ( admin, U, join channel )
-                //    A_3: 1 (admin)
-                // root message:
-                //    A_3: 1 
-                //    uv: 1
+		// system message:
+		//    town square: 2 ( admin, U, join team)
+		//    off topics: 2 ( admin, U, join channel )
+		//    A_3: 1 (admin)
+		// root message:
+		//    A_3: 1
+		//    uv: 1
 		assert.Equalf(t, 7, stats.OrgRoots, "original(true) root is not correct")
 		assert.Equalf(t, 0, stats.NonOrgRoots, "non-original root is not correct")
 		assert.Equalf(t, 0, stats.DeletedOrgRoots, "deleted original root is not correct")
@@ -1176,6 +1223,48 @@ func TestPrune(t *testing.T) {
 		assert.Equalf(t, 0, stats.Db_fileInfo, "deleted from FileInfo is not correct")
 		assert.Equalf(t, 0, stats.Db_preference, "deleted from Preference is not correct")
 		assert.Equalf(t, 7, stats.Db_posts, "deleted from Posts is not correct")
-                
+
 	})
+
+	tms, appErr := th.App.GetAllTeams()
+	require.Nil(t, appErr, "should be no err, but:%v", appErr)
+
+	for _, tm := range tms {
+		fmt.Printf("*********** let team msg:%v\n", tm.Name)
+	}
+}
+
+func countSystemPostsFromTeam(t *testing.T, th *api4.TestHelper, tmid string) int {
+
+	chs, appErr := th.App.GetPublicChannelsForTeam(tmid, 0, 999)
+	require.Nil(t, appErr, "should be no err, but:%v", appErr)
+
+	var cnt int
+	for _, ch := range []*model.Channel(chs) {
+		cnt = cnt + countSystemPostsFromChannel(t, th, ch.Id)
+	}
+
+	chs, appErr = th.App.GetPrivateChannelsForTeam(tmid, 0, 999)
+	require.Nil(t, appErr, "should be no err, but:%v", appErr)
+
+	for _, ch := range []*model.Channel(chs) {
+		cnt = cnt + countSystemPostsFromChannel(t, th, ch.Id)
+	}
+
+	return cnt
+
+}
+func countSystemPostsFromChannel(t *testing.T, th *api4.TestHelper, chid string) int {
+
+	pl, appErr := th.App.GetPosts(chid, 0, 999)
+	require.Nil(t, appErr, "should be no err, but:%v", appErr)
+
+	var cnt int
+	for _, p := range pl.Posts {
+		fmt.Printf("*********** All team msg:%v\n", p.Message)
+		if p.Type != "" {
+			cnt++
+		}
+	}
+	return cnt
 }
